@@ -98,14 +98,35 @@ lemma subset_Iic_of_mem_𝓚 {B : Set (T × Ω)} (hB : B ∈ 𝓚 f t) :
 lemma union_mem_𝓚 {f : Filtration T mΩ} {t : T}
     {B B' : Set (T × Ω)} (hB : B ∈ 𝓚 f t) (hB' : B' ∈ 𝓚 f t) : B ∪ B' ∈ 𝓚 f t := by
   -- easy
-  sorry
+  classical
+  rw [mem_𝓚_iff] at *
+  rcases hB with ⟨s,hs,hB⟩
+  rcases hB' with ⟨s',hs',hB'⟩
+  use s ∪ s'
+  simp only [Finset.coe_union, Set.union_subset_iff, Finset.mem_union]
+  refine ⟨ ⟨hs, hs'⟩, ?_⟩
+  rw [hB, hB']
+  aesop
 
 /-- If `B ∈ 𝓚(t)`, then its projection over `Ω` is (f t)-measurable. -/
 lemma measurableSet_snd_of_mem_𝓚 {B : Set (T × Ω)} (hB : B ∈ 𝓚 f t) :
     MeasurableSet[f t] (Prod.snd '' B) := by
   /- should be easy, just use `measurableSet_snd_of_mem_𝓚₀` and the fact that the union of snd is
   snd of the union (`Set.image_union`) and then the fact that union of measurable is measurable -/
-  sorry
+  rw [mem_𝓚_iff] at hB
+  rcases hB with ⟨ s, hs, hB ⟩
+  simp only [hB, Set.image_iUnion]
+  refine MeasurableSet.sUnion ?_ ?_
+  · --refine Set.countable_range (fun i ↦ ⋃ (_ : i ∈ s), Prod.snd '' i)
+    --why doesn't this work?
+    sorry
+  · intro x hx
+    simp only [Set.mem_range] at hx
+    rcases hx with ⟨ y,hy⟩
+    rw [← hy]
+    refine MeasurableSet.iUnion ?_
+    intro hys
+    exact measurableSet_snd_of_mem_𝓚₀ (hs hys)
 
 /-- `𝓚δ(t)` is the collection of countable intersections of sets in `𝓚(t)`. -/
 def 𝓚δ (f : Filtration T mΩ) (t : T) : Set (Set (T × Ω)) :=
@@ -120,8 +141,27 @@ lemma subset_Iic_of_mem_𝓚δ {B : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) :
 lemma union_mem_𝓚δ {f : Filtration T mΩ} {t : T}
     {B B' : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) (hB' : B' ∈ 𝓚δ f t) : B ∪ B' ∈ 𝓚δ f t := by
   -- easy, you can use `union_mem_𝓚`, `Set.iInter_union` and `Set.union_iInter`
-  sorry
-
+  have ⟨ℬ, hℬ_sub, ⟨b, hb⟩, hℬ_count, hB_eq⟩ := hB
+  have ⟨ℬ', hℬ_sub', ⟨b', hb'⟩, hℬ_count', hB_eq'⟩ := hB'
+  use {x | ∃ bb ∈ ℬ, ∃ bb' ∈ ℬ', x = bb ∪ bb'}
+  refine ⟨ ?_,?_,?_,?_⟩
+  · intro x hx
+    simp only [Set.mem_setOf_eq] at hx
+    rcases hx with ⟨ bb, hbb, bb', hbb', hx ⟩
+    rw [hx]
+    refine union_mem_𝓚 (hℬ_sub hbb) (hℬ_sub' hbb')
+  · use b ∪ b'
+    simp_all only [Set.countable_coe_iff, Set.mem_setOf_eq]
+    use b
+    refine ⟨ hb,?_⟩
+    use b'
+  · simp_all only [Set.countable_coe_iff, Set.coe_setOf]
+    --refine Subtype.countable
+    --why doesn't this work?
+    sorry
+  · simp_all only [Set.countable_coe_iff, Set.mem_setOf_eq, Set.iInter_exists, Set.biInter_and',
+    Set.iInter_iInter_eq_left]
+    exact Set.iInter₂_union_iInter₂ (fun i₁ i₂ ↦ i₁) fun j₁ j₂ ↦ j₁
 /- TODO: check that this is provable even without the hypothesis that `B := ⋂ B_n ⊆ 𝒦δ`, I'm not
 completely sure. If it is not possible to prove it like this, then just add the hypothesis
 `⋂ B_n ⊆ 𝒦δ`. -/
