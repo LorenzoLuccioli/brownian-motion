@@ -129,11 +129,14 @@ lemma union_mem_𝓚δ {f : Filtration T mΩ} {t : T}
   refine ⟨{x | ∃ bb ∈ ℬ, ∃ bb' ∈ ℬ', x = bb ∪ bb'}, fun x ⟨bb, hbb, bb', hbb', hx⟩ ↦ ?_,
     ⟨b ∪ b', b, hb, b', hb', rfl⟩, ?_, ?_⟩
   · exact hx ▸ union_mem_𝓚 (hℬ_sub hbb) (hℬ_sub' hbb')
-  · refine Set.countable_coe_iff.mpr ?_
-    sorry
+  · have : {x | ∃ bb ∈ ℬ, ∃ bb' ∈ ℬ', x = bb ∪ bb'} = (fun p ↦ p.1 ∪ p.2) '' (ℬ ×ˢ ℬ') := by
+      aesop
+    rw [Set.countable_coe_iff, this]
+    exact .image (.prod hℬ_count hℬ_count') _
   · simp only [Set.mem_setOf_eq, Set.iInter_exists, Set.biInter_and', Set.iInter_iInter_eq_left,
       hB_eq, hB_eq']
     exact Set.iInter₂_union_iInter₂ (fun i₁ i₂ ↦ i₁) fun j₁ j₂ ↦ j₁
+
 /- TODO: check that this is provable even without the hypothesis that `B := ⋂ B_n ⊆ 𝒦δ`, I'm not
 completely sure. If it is not possible to prove it like this, then just add the hypothesis
 `⋂ B_n ⊆ 𝒦δ`. -/
@@ -205,7 +208,6 @@ lemma exists_mem_𝓛σδ_of_measurableSet {mT : MeasurableSpace T} [BorelSpace 
   implemented, see this Zulip message:
   https://leanprover.zulipchat.com/#narrow/channel/113489-new-members/topic/Proof.3A.20.20isField.20ss.20.E2.88.A7.20isMonoClass.20ss.20.E2.86.94.20isSigmaField.20ss.20.3F/near/448825855 -/
   sorry
-
 
 end 𝓛_sets
 
