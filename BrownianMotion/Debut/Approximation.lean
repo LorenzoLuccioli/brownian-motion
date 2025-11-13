@@ -167,6 +167,12 @@ lemma union_mem_𝓚δ {f : Filtration T mΩ} {t : T}
       hB_eq, hB_eq']
     exact Set.iInter₂_union_iInter₂ (fun i₁ i₂ ↦ i₁) fun j₁ j₂ ↦ j₁
 
+/-- `𝓚δ(t)` is closed under finite union. -/
+lemma iUnion_mem_𝓚δ {f : Filtration T mΩ} {t : T} {ℬ : Finset (Set (T × Ω))}
+    (hℬ : (ℬ : Set (Set (T × Ω))) ⊆ 𝓚δ f t) : ⋃ b ∈ ℬ, b ∈ 𝓚δ f t := by
+  -- easy, use induction on `ℬ` and `union_mem_𝓚δ`
+  sorry
+
 /- TODO: check that this is provable even without the hypothesis that `B := ⋂ B_n ⊆ 𝒦δ`, I'm not
 completely sure. If it is not possible to prove it like this, then just add the hypothesis
 `⋂ B_n ⊆ 𝒦δ`.
@@ -345,8 +351,13 @@ lemma B_subset_B' (𝒜 : Approximation f P t A) (n : ℕ) [NeZero n] :
   simp_rw [Finset.mem_Icc, le_refl, and_true, NeZero.one_le]
 
 lemma B'_mem (𝒜 : Approximation f P t A) (n : ℕ) : 𝒜.B' n ∈ 𝓚δ f t := by
-  -- easy, use the definition of B', B_mem and the fact that 𝓚δ is closed under union
-  sorry
+  classical
+  have : 𝒜.B' n = ⋃ B ∈ Finset.image (fun m ↦ 𝒜.B (1 / ↑m)) (Finset.Icc 1 n), B := by
+    rw [Finset.set_biUnion_finset_image, B']
+  rw [this]
+  refine iUnion_mem_𝓚δ fun b hb ↦ ?_
+  simp only [one_div, Finset.coe_image, Finset.coe_Icc, Set.mem_image, Set.mem_Icc] at hb
+  exact hb.choose_spec.2 ▸ 𝒜.B_mem _ <| ENNReal.inv_pos.mpr <| ENNReal.natCast_ne_top _
 
 lemma B'_subset_A (𝒜 : Approximation f P t A) (n : ℕ) : 𝒜.B' n ⊆ A := by
   have hB'_subset_A : ∀ m ∈ Finset.Icc 1 n, 𝒜.B (1 / m) ⊆ A :=
