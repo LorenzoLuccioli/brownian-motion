@@ -74,6 +74,9 @@ inductive 𝓚 (f : Filtration T mΩ) (t : T) : Set (Set (T × Ω)) where
 
 lemma 𝓚₀_subset_𝓚 (f : Filtration T mΩ) (t : T) : 𝓚₀ f t ⊆ 𝓚 f t := fun _ hB ↦ 𝓚.base _ hB
 
+@[simp]
+lemma empty_mem_𝓚 (f : Filtration T mΩ) (t : T) : ∅ ∈ 𝓚 f t := 𝓚.base _ (empty_mem_𝓚₀ f t)
+
 lemma mem_𝓚_iff (f : Filtration T mΩ) (t : T) (B : Set (T × Ω)) :
     B ∈ 𝓚 f t ↔ ∃ s : Finset (Set (T × Ω)),
       (s : Set _) ⊆ 𝓚₀ f t ∧ B = ⋃ x ∈ s, x := by
@@ -142,6 +145,10 @@ lemma inter_mem_𝓚 [T2Space T] {f : Filtration T mΩ} {t : T}
 def 𝓚δ (f : Filtration T mΩ) (t : T) : Set (Set (T × Ω)) :=
   {B | ∃ ℬ : ℕ → (Set (T × Ω)), (∀ n, ℬ n ∈  𝓚 f t) ∧ B = ⋂ n, ℬ n}
 
+@[simp]
+lemma empty_mem_𝓚δ (f : Filtration T mΩ) (t : T) : ∅ ∈ 𝓚δ f t :=
+  ⟨fun _ ↦ ∅, by simp [Set.iInter_const]⟩
+
 lemma subset_Iic_of_mem_𝓚δ {B : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) :
     B ⊆ Set.Iic t ×ˢ .univ := by
   have ⟨ℬ, hℬ, hB_eq⟩ := hB
@@ -170,8 +177,13 @@ lemma union_mem_𝓚δ {f : Filtration T mΩ} {t : T}
 /-- `𝓚δ(t)` is closed under finite union. -/
 lemma iUnion_mem_𝓚δ {f : Filtration T mΩ} {t : T} {ℬ : Finset (Set (T × Ω))}
     (hℬ : (ℬ : Set (Set (T × Ω))) ⊆ 𝓚δ f t) : ⋃ b ∈ ℬ, b ∈ 𝓚δ f t := by
-  -- easy, use induction on `ℬ` and `union_mem_𝓚δ`
-  sorry
+  classical
+  induction ℬ using Finset.induction_on with
+  | empty => simp
+  | insert x s hxs ih =>
+    simp only [Finset.coe_insert, Set.insert_subset_iff, Finset.mem_insert,
+      Set.iUnion_iUnion_eq_or_left] at hℬ ⊢
+    exact union_mem_𝓚δ hℬ.1 (ih hℬ.2)
 
 /-- If `B ∈ 𝓚δ(t)`, then its left sections are compact. -/
 lemma compact_left_section_of_mem_𝒦δ [T2Space T] {f : Filtration T mΩ} {t : T} {B : Set (T × Ω)}
