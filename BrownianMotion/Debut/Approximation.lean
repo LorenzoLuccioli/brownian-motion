@@ -180,8 +180,8 @@ I changed the index type from a generic countable `ι` to `ℕ` to easily add th
 maybe it can be generalized, but it is probably not worth it.
  -/
 /-- In `𝓚δ`, the projection over `Ω` and countable descending intersections commute. -/
-lemma iInf_snd_eq_snd_iInf_of_mem_𝓚δ {t : T}
-    {ℬ : ℕ → Set (T × Ω)} (hℬ : ∀ i, ℬ i ∈ 𝓚δ f t) (h_desc : ∀ i, ℬ (i + 1) ⊆ ℬ i) :
+lemma iInf_snd_eq_snd_iInf_of_mem_𝓚δ [T2Space T] {t : T}
+    {ℬ : ℕ → Set (T × Ω)} (hℬ : ∀ i, ℬ i ∈ 𝓚δ f t) (h_desc : Antitone ℬ) :
     ⋂ i, Prod.snd '' ℬ i = Prod.snd '' (⋂ i, ℬ i) := by
   -- see proof in the blueprint
 
@@ -196,51 +196,38 @@ lemma iInf_snd_eq_snd_iInf_of_mem_𝓚δ {t : T}
 /-- If `B ∈ 𝓚δ(t)`, then its projetion over `Ω` is (f t)-measurable. -/
 lemma measurableSet_snd_of_mem_𝓚δ [T2Space T] {B : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) :
     MeasurableSet[f t] (Prod.snd '' B) := by
-  -- use `iInf_snd_eq_snd_iInf_of_mem_𝓚δ`, `measurableSet_snd_of_mem_𝓚` and the definition of `𝒦δ`
-  obtain ⟨ℬ, h𝓚, h_ne, ⟨F, hF⟩, hB⟩ := hB
-  have : Nonempty ℬ := h_ne.to_subtype
-  have ⟨g, hg⟩ := hF.hasLeftInverse
-  let G : ℕ → Set (T × Ω) := fun n ↦ ⋂ i ≤ n, g i
+  have ⟨ℬ, hℬ, hB_eq⟩ := hB
+  let G : ℕ → Set (T × Ω) := fun n ↦ ⋂ i ≤ n, ℬ i
   have hG : B = ⋂ i, G i := by
     ext x
-    simp only [hB, Set.mem_iInter, G]
-    refine ⟨fun hx n i hin ↦ hx _ (g i).coe_prop, fun hx b hb ↦ ?_⟩
-    have ⟨i, hi⟩ := hg.surjective ⟨b, hb⟩
-    have ⟨i, hi⟩ : ∃ i, g i = b := ⟨i, by rw [hi]⟩
-    exact hi ▸ hx i i (le_refl i)
-
-  have h_desc : ∀ (i : ℕ), G (i + 1) ⊆ G i := by
+    simp only [hB_eq, Set.mem_iInter, G]
+    exact ⟨fun hx _ _ _ ↦ hx _, fun hx i ↦ hx i i (le_refl i)⟩
+  have h_desc : Antitone G := by
     unfold G
-    refine fun i x hx ↦ ?_
-    simp only [Set.mem_iInter] at hx ⊢
-    intro n
-    by_cases h : n ≤ i
-    · exact fun _ ↦ hx n (n.le_succ_of_le h)
-    · exact fun hn ↦ (h hn).elim
-
+    refine fun n m hnm s hs S ⟨k, hS⟩ ↦ ?_
+    simp only [Set.mem_iInter, ← hS] at hs ⊢
+    exact fun hkn ↦ hs k (hkn.trans hnm)
   have hG_mem (i : ℕ) : G i ∈ 𝓚 f t := by
     induction i with
     | zero =>
-      simp only [nonpos_iff_eq_zero, Set.iInter_iInter_eq_left, G]
-      exact h𝓚 (g 0).coe_prop
+      simpa only [nonpos_iff_eq_zero, Set.iInter_iInter_eq_left, G] using hℬ 0
     | succ i ih =>
-      have : G (i + 1) = G i ∩ g (i + 1) := by
-        simp only [G]
-        induction i with
-        | zero =>
-          ext x
-          simp_rw [zero_add, nonpos_iff_eq_zero, Set.iInter_iInter_eq_left]
-          refine ⟨?_, fun hx ↦ Set.mem_iInter₂_of_mem fun i _ ↦ ?_⟩
-          · simp_all only [Set.mem_iInter, Set.mem_inter_iff, zero_le, le_refl,
-              and_self, implies_true]
-          · interval_cases i
-            · exact hx.left
-            · exact hx.right
-        | succ i ih =>
-          ext x
-          simp_rw [Set.mem_inter_iff, Set.mem_iInter]
-          grind
-      exact this ▸ inter_mem_𝓚 ih (h𝓚 (g (i + 1)).coe_prop)
+      convert inter_mem_𝓚 ih (hℬ (i + 1))
+      simp only [G]
+      induction i with
+      | zero =>
+        ext x
+        simp_rw [zero_add, nonpos_iff_eq_zero, Set.iInter_iInter_eq_left]
+        refine ⟨?_, fun hx ↦ Set.mem_iInter₂_of_mem fun i _ ↦ ?_⟩
+        · simp_all only [Set.mem_iInter, Set.mem_inter_iff, zero_le, le_refl,
+            and_self, implies_true]
+        · interval_cases i
+          · exact hx.left
+          · exact hx.right
+      | succ i ih =>
+        ext x
+        simp_rw [Set.mem_inter_iff, Set.mem_iInter]
+        grind
   have hG_mem' : ∀ i, G i ∈ 𝓚δ f t := fun i ↦ 𝓚_subset_𝓚δ (hG_mem i)
   rw [hG, ← iInf_snd_eq_snd_iInf_of_mem_𝓚δ hG_mem' h_desc]
   exact .iInter fun i ↦ measurableSet_snd_of_mem_𝓚 (hG_mem i)
