@@ -173,6 +173,19 @@ lemma iUnion_mem_𝓚δ {f : Filtration T mΩ} {t : T} {ℬ : Finset (Set (T × 
   -- easy, use induction on `ℬ` and `union_mem_𝓚δ`
   sorry
 
+/-- If `B ∈ 𝓚δ(t)`, then its left sections are compact. -/
+lemma compact_left_section_of_mem_𝒦δ [T2Space T] {f : Filtration T mΩ} {t : T} {B : Set (T × Ω)}
+    (hB : B ∈ 𝓚δ f t) (ω : Ω) : IsCompact {t | (t, ω) ∈ B} := by
+  obtain ⟨ℬ, hℬ, hB_eq⟩ := hB
+  simp_rw [hB_eq, Set.mem_iInter, Set.setOf_forall]
+  have h n : IsCompact {s | (s, ω) ∈ ℬ n} := by
+    have ⟨S, hS, hℬ⟩ := (mem_𝓚_iff ..).mp (hℬ n)
+    simp_rw [hℬ, Set.mem_iUnion, Set.setOf_exists]
+    refine S.isCompact_biUnion fun A hA ↦ ?_
+    have ⟨K, M, hA, hK_sub, hK_cpct, hM_meas⟩ := hS hA
+    by_cases h : ω ∈ M <;> simp [hA, h, hK_cpct]
+  exact .of_isClosed_subset (h 0) (isClosed_iInter fun n ↦ (h n).isClosed) (Set.iInter_subset _ _)
+
 /- TODO: check that this is provable even without the hypothesis that `B := ⋂ B_n ⊆ 𝒦δ`, I'm not
 completely sure. If it is not possible to prove it like this, then just add the hypothesis
 `⋂ B_n ⊆ 𝒦δ`.
@@ -183,15 +196,20 @@ maybe it can be generalized, but it is probably not worth it.
 lemma iInf_snd_eq_snd_iInf_of_mem_𝓚δ [T2Space T] {t : T}
     {ℬ : ℕ → Set (T × Ω)} (hℬ : ∀ i, ℬ i ∈ 𝓚δ f t) (h_desc : Antitone ℬ) :
     ⋂ i, Prod.snd '' ℬ i = Prod.snd '' (⋂ i, ℬ i) := by
-  -- see proof in the blueprint
-
-  /- the intersection of the `S(Bn)` is compact since each of them is compact, why? maybe we can
-  use the fact that they are all contained in the compact set `Set.Iic t` and they are closed (why
-  are they closed?? it should be fairly easy to show it starting from the claim that `S(A)` is cpct
-  for `A ∈ 𝒦₀`)
-  maybe use `IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed` for the second case
-  to show that the intersection is nonempty and reach the contradiction -/
-  sorry
+  have h_cpct := fun n ↦ compact_left_section_of_mem_𝒦δ (hℬ n)
+  have h_rev : ∀ ω, (∀ n, ∃ t, (t, ω) ∈ ℬ n) → ∃ t, (t, ω) ∈ ⋂ n, ℬ n := by
+    intro ω hω
+    have h_inter_nonempty : ∀ {F : ℕ → Set T}, (∀ n, IsCompact (F n)) →
+        (∀ n, F n ≠ ∅) → Antitone F → (⋂ n, F n).Nonempty := by
+      intro F hF hF_nonempty hF_antitone
+      exact IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed _
+        (fun i ↦ hF_antitone i.le_succ) (fun n ↦ Set.nonempty_iff_ne_empty.mpr (hF_nonempty n))
+        (hF 0) (fun n ↦ (hF n).isClosed)
+    have ⟨t, ht⟩ : (⋂ n, {t | (t, ω) ∈ ℬ n}).Nonempty :=
+      IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed _
+        (fun i t ht ↦ h_desc i.le_succ ht) hω (h_cpct 0 ω) (fun n ↦ (h_cpct n ω).isClosed)
+    exact ⟨t, Set.mem_iInter.2 fun n ↦ Set.mem_iInter.1 ht n⟩
+  aesop
 
 /-- If `B ∈ 𝓚δ(t)`, then its projetion over `Ω` is (f t)-measurable. -/
 lemma measurableSet_snd_of_mem_𝓚δ [T2Space T] {B : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) :
