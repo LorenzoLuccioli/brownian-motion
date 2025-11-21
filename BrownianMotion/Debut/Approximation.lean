@@ -140,32 +140,32 @@ lemma inter_mem_𝓚 [T2Space T] {f : Filtration T mΩ} {t : T}
 
 /-- `𝓚δ(t)` is the collection of countable intersections of sets in `𝓚(t)`. -/
 def 𝓚δ (f : Filtration T mΩ) (t : T) : Set (Set (T × Ω)) :=
-  {B | ∃ ℬ ⊆ 𝓚 f t, ℬ.Nonempty ∧ ℬ.Countable ∧ B = ⋂ b ∈ ℬ, b}
+  {B | ∃ ℬ : ℕ → (Set (T × Ω)), (∀ n, ℬ n ∈  𝓚 f t) ∧ B = ⋂ n, ℬ n}
 
 lemma subset_Iic_of_mem_𝓚δ {B : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) :
     B ⊆ Set.Iic t ×ˢ .univ := by
-  have ⟨ℬ, hℬ_sub, ⟨b, hb⟩, hℬ_count, hB_eq⟩ := hB
-  exact hB_eq ▸ Set.iInter₂_subset_of_subset b hb (subset_Iic_of_mem_𝓚 (hℬ_sub hb))
+  have ⟨ℬ, hℬ, hB_eq⟩ := hB
+  exact hB_eq ▸ Set.iInter_subset_of_subset 0 (subset_Iic_of_mem_𝓚 (hℬ 0))
 
 /-- `𝓚(t) ⊆ 𝓚δ(t)`. -/
 lemma 𝓚_subset_𝓚δ {B : Set (T × Ω)} (hB : B ∈ 𝓚 f t) : B ∈ 𝓚δ f t :=
-  ⟨{B}, fun _ h ↦ h ▸ hB, ⟨B, rfl⟩, (Set.finite_singleton B).countable,
-    Eq.symm Set.iInter_iInter_eq_left⟩
+  ⟨fun _ ↦ B, fun _ ↦ hB, (Set.iInter_const B).symm⟩
 
 /-- `𝓚δ(t)` is closed under union. -/
 lemma union_mem_𝓚δ {f : Filtration T mΩ} {t : T}
     {B B' : Set (T × Ω)} (hB : B ∈ 𝓚δ f t) (hB' : B' ∈ 𝓚δ f t) : B ∪ B' ∈ 𝓚δ f t := by
-  have ⟨ℬ, hℬ_sub, ⟨b, hb⟩, hℬ_count, hB_eq⟩ := hB
-  have ⟨ℬ', hℬ_sub', ⟨b', hb'⟩, hℬ_count', hB_eq'⟩ := hB'
-  refine ⟨{x | ∃ bb ∈ ℬ, ∃ bb' ∈ ℬ', x = bb ∪ bb'}, fun x ⟨bb, hbb, bb', hbb', hx⟩ ↦ ?_,
-    ⟨b ∪ b', b, hb, b', hb', rfl⟩, ?_, ?_⟩
-  · exact hx ▸ union_mem_𝓚 (hℬ_sub hbb) (hℬ_sub' hbb')
-  · have : {x | ∃ bb ∈ ℬ, ∃ bb' ∈ ℬ', x = bb ∪ bb'} = (fun p ↦ p.1 ∪ p.2) '' (ℬ ×ˢ ℬ') := by
-      aesop
-    exact this ▸ .image (.prod hℬ_count hℬ_count') _
-  · simp only [Set.mem_setOf_eq, Set.iInter_exists, Set.biInter_and', Set.iInter_iInter_eq_left,
-      hB_eq, hB_eq']
-    exact Set.iInter₂_union_iInter₂ (fun i₁ i₂ ↦ i₁) fun j₁ j₂ ↦ j₁
+  have ⟨ℬ, hℬ, hB_eq⟩ := hB
+  have ⟨ℬ', hℬ', hB_eq'⟩ := hB'
+  have h_union : B ∪ B' = ⋂ n, ⋂ m, (ℬ n ∪ ℬ' m) := by
+    ext x
+    simp only [hB_eq, hB_eq', Set.mem_union, Set.mem_iInter]
+    grind
+  refine ⟨fun n ↦ ℬ n.unpair.1 ∪ ℬ' n.unpair.2,
+    fun n ↦ union_mem_𝓚 (hℬ n.unpair.1) (hℬ' n.unpair.2), ?_⟩
+  ext ⟨x, y⟩
+  simp_rw [h_union, Set.mem_iInter, Set.mem_union]
+  refine ⟨by grind, fun h i j ↦ ?_⟩
+  convert Nat.unpair_pair _ _ ▸ h (i.pair j)
 
 /-- `𝓚δ(t)` is closed under finite union. -/
 lemma iUnion_mem_𝓚δ {f : Filtration T mΩ} {t : T} {ℬ : Finset (Set (T × Ω))}
