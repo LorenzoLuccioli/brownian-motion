@@ -296,7 +296,7 @@ more compact way, without having to write `∃` 4 times? -/
 `A` is the projection of `B` on `T × Ω`. -/
 lemma exists_mem_𝓛σδ_of_measurableSet {mT : MeasurableSpace T} [BorelSpace T]
     {A : Set (T × Ω)} (hA_subs : A ⊆ Set.Iic t ×ˢ .univ) (hA : MeasurableSet[mT.prod (f t)] A) :
-    ∃ X : Type*, ∃ _ : TopologicalSpace X, ∃ _ : CompactSpace X, ∃ _ : T2Space X,
+    ∃ (X : Type*) (_ : TopologicalSpace X) (_ : CompactSpace X) (_ : T2Space X),
       ∃ B ∈ 𝓛σδ X f t, A = Prod.snd '' B := by
   /- See the proof of lemma A.2 in the paper. This will need some work and probably some
   auxiliary lemmas.
